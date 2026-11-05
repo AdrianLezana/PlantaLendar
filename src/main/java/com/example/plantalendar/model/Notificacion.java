@@ -24,6 +24,13 @@ public class Notificacion {
     @JoinColumn(name = "id_usuario")
     private PerfilUsuario usuario;
 
+    @ManyToOne
+    @JoinColumn(name = "id_calendario")
+    private CalendarioRiego calendario;
+
+    @Column(name = "tipo_notificacion")
+    private String tipoNotificacion;
+
     @Column(name = "mensaje", nullable = false, columnDefinition = "text")
     private String mensaje;
 
@@ -50,6 +57,22 @@ public class Notificacion {
 
     public void setUsuario(PerfilUsuario usuario) {
         this.usuario = usuario;
+    }
+
+    public CalendarioRiego getCalendario() {
+        return calendario;
+    }
+
+    public void setCalendario(CalendarioRiego calendario) {
+        this.calendario = calendario;
+    }
+
+    public String getTipoNotificacion() {
+        return tipoNotificacion;
+    }
+
+    public void setTipoNotificacion(String tipoNotificacion) {
+        this.tipoNotificacion = tipoNotificacion;
     }
 
     public String getMensaje() {
