@@ -34,7 +34,7 @@ public class Notificacion {
     @Column(name = "mensaje", nullable = false, columnDefinition = "text")
     private String mensaje;
 
-    @Column(name = "fecha_hora")
+    @Column(name = "fecha_envio")
     private LocalDateTime fechaHora;
 
     @Column(name = "leida")
