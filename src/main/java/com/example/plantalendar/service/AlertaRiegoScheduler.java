@@ -7,56 +7,54 @@ import com.example.plantalendar.repository.NotificacionRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class AlertaRiegoScheduler {
 
-    private static final Map<DayOfWeek, String> DIAS_SEMANA = Map.of(
-            DayOfWeek.MONDAY, "Lun",
-            DayOfWeek.TUESDAY, "Mar",
-            DayOfWeek.WEDNESDAY, "Mie",
-            DayOfWeek.THURSDAY, "Jue",
-            DayOfWeek.FRIDAY, "Vie",
-            DayOfWeek.SATURDAY, "Sab",
-            DayOfWeek.SUNDAY, "Dom"
-    );
-
     private final CalendarioRiegoRepository calendarioRiegoRepository;
     private final NotificacionRepository notificacionRepository;
 
-    public AlertaRiegoScheduler(CalendarioRiegoRepository calendarioRiegoRepository,
-                                NotificacionRepository notificacionRepository) {
+    public AlertaRiegoScheduler(CalendarioRiegoRepository calendarioRiegoRepository, NotificacionRepository notificacionRepository) {
         this.calendarioRiegoRepository = calendarioRiegoRepository;
         this.notificacionRepository = notificacionRepository;
     }
 
     @Scheduled(cron = "0 * * * * *")
-    public void generarAlertasDeRiego() {
-        LocalDateTime ahora = LocalDateTime.now();
-        String diaActual = DIAS_SEMANA.get(ahora.toLocalDate().getDayOfWeek());
-        LocalTime horaActual = ahora.toLocalTime().truncatedTo(ChronoUnit.MINUTES);
-        List<CalendarioRiego> calendariosActivos = calendarioRiegoRepository.findByActivoTrue();
+    public void verificarRiegosProgramados() {
+        List<CalendarioRiego> activos = calendarioRiegoRepository.findByActivoTrue();
+        if (activos.isEmpty()) return;
 
-        for (CalendarioRiego calendario : calendariosActivos) {
-            LocalTime horaRiego = calendario.getHoraRiego();
-            if (calendario.getDiasSemana() != null
-                    && calendario.getDiasSemana().contains(diaActual)
-                    && horaRiego != null
-                    && horaRiego.truncatedTo(ChronoUnit.MINUTES).equals(horaActual)) {
-                Notificacion notificacion = new Notificacion();
-                notificacion.setTipoNotificacion("Alerta de Riego");
-                notificacion.setMensaje("Es hora de regar según tu calendario de riego.");
-                notificacion.setCalendario(calendario);
-                notificacion.setUsuario(calendario.getUsuario());
-                notificacion.setFechaHora(ahora);
-                notificacion.setLeida(false);
-                notificacionRepository.save(notificacion);
+        // 1. Forzar la hora a minutos exactos (ej. 16:45:00) para igualar a PostgreSQL
+        LocalTime horaActual = LocalTime.now().truncatedTo(ChronoUnit.MINUTES);
+
+        // 2. Mapear el día actual al formato exacto de los checkboxes del HTML
+        String[] diasHtml = {"", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+        int diaActualInt = LocalDate.now().getDayOfWeek().getValue();
+        String diaHoy = diasHtml[diaActualInt];
+
+        System.out.println("Cron Check: Buscando riegos para " + diaHoy + " a las " + horaActual);
+
+        for (CalendarioRiego cal : activos) {
+            // Validación estricta, previniendo nulos
+            if (cal.getHoraRiego() != null && cal.getDiasSemana() != null) {
+                if (cal.getHoraRiego().equals(horaActual) && cal.getDiasSemana().contains(diaHoy)) {
+
+                    Notificacion notif = new Notificacion();
+                    notif.setTipoNotificacion("Alerta de Riego");
+                    notif.setMensaje("Riego automático activado para Sector Orquídeas Demo");
+                    notif.setUsuario(cal.getUsuario());
+                    notif.setCalendario(cal);
+                    notif.setLeida(false);
+                    notif.setFechaHora(LocalDateTime.now());
+
+                    notificacionRepository.save(notif);
+                    System.out.println(">>> ÉXITO: Notificación guardada en la base de datos.");
+                }
             }
         }
     }

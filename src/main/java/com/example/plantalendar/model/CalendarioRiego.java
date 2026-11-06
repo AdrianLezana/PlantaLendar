@@ -39,10 +39,10 @@ public class CalendarioRiego {
     private LocalTime horaRiego;
 
     @Column(name = "duracion_minutos")
-    private Integer duracionMinutos;
+    private Integer duracionMinutos = 15;
 
     @Column(name = "activo")
-    private Boolean activo;
+    private Boolean activo = true;
 
     public CalendarioRiego() {
     }
